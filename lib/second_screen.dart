@@ -5,7 +5,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
 
-
 class SecondScreen extends StatefulWidget {
   final File image; // Adicione um campo para a imagem
 
@@ -22,24 +21,32 @@ class _SecondScreenState extends State<SecondScreen> {
   String _nameErrorMessage = '';
   String _phoneNumberErrorMessage = '';
 
-  Future<void> saveData(String name, String phoneNumber) async {
-    CollectionReference users = FirebaseFirestore.instance.collection('users');
-    return users
-        .add({
+
+  Future<String> saveData(String name, String phoneNumber) async {
+    CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencias');
+    String uniqueId = Uuid().v4(); // Gera um ID único de letras e números
+    await emergencies.doc(uniqueId).set({
+      'uid': uniqueId, // UID único
       'name': name, // Nome
       'phoneNumber': phoneNumber, // Número de telefone
-    })
-        .then((value) => print("User Added"))
-        .catchError((error) => print("Failed to add user: $error"));
+    });
+    return uniqueId; // Retorna o UID único
   }
 
-  Future<void> uploadFile(File file) async {
+  Future<void> uploadFile(File file, String documentId) async {
     try {
       var uuid = Uuid();
-      // Substitua o nome do arquivo conforme necessário
+      // Substitui o nome do arquivo conforme necessário
       await FirebaseStorage.instance
           .ref('uploads/${uuid.v1()}.png')
-          .putFile(file);
+          .putFile(file)
+          .then((taskSnapshot) async {
+        String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+        await FirebaseFirestore.instance
+            .collection('emergencias')
+            .doc(documentId)
+            .update({'fileUrl': downloadUrl});
+      });
     } on FirebaseException catch (e) {
       // e.g, e.code == 'canceled'
       print(e);
@@ -51,16 +58,20 @@ class _SecondScreenState extends State<SecondScreen> {
     final phoneNumber = _phoneNumberController.text;
 
     if (fullName.length >= 7 && phoneNumber.length >= 11) {
-      await saveData(fullName, phoneNumber);
-      await uploadFile(widget.image); // Chame a função uploadFile aqui
-      setState(() {
-        _nameErrorMessage = '';
-        _phoneNumberErrorMessage = '';
-      });
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ThirdScreen()),
-      );
+      String documentId = await saveData(fullName, phoneNumber);
+      if (documentId != null) {
+        await uploadFile(widget.image, documentId);
+        setState(() {
+          _nameErrorMessage = '';
+          _phoneNumberErrorMessage = '';
+        });
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ThirdScreen()),
+        );
+      } else {
+        print('Erro ao salvar os dados');
+      }
     } else {
       setState(() {
         _nameErrorMessage = fullName.length < 7 ? 'O nome deve ter pelo menos 7 letras' : '';
@@ -141,7 +152,7 @@ class _SecondScreenState extends State<SecondScreen> {
               SizedBox(height: 8.0),
               ElevatedButton(
                 onPressed: _validateInputs,
-                child: Text('Validar'),
+                child: Text('Chamar Emegência'),
               ),
             ],
           ),
