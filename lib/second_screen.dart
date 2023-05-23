@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SecondScreen extends StatefulWidget {
   final File image; // Adicione um campo para a imagem
@@ -21,32 +23,30 @@ class _SecondScreenState extends State<SecondScreen> {
   String _nameErrorMessage = '';
   String _phoneNumberErrorMessage = '';
 
+  Future<void> updateData(String name, String phoneNumber) async {
+    final String uid = await FirebaseMessaging.instance.getToken() ?? '';
 
-  Future<String> saveData(String name, String phoneNumber) async {
-    CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencias');
-    String uniqueId = Uuid().v4(); // Gera um ID único de letras e números
-    await emergencies.doc(uniqueId).set({
-      'uid': uniqueId, // UID único
-      'name': name, // Nome
-      'phoneNumber': phoneNumber, // Número de telefone
+    CollectionReference users = FirebaseFirestore.instance.collection('documentID'); // Define a referência
+    DocumentSnapshot docSnapshot = await users.doc(uid).get();
+    Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?; //
+    String? documentId = data?['documentId'];
+
+    // Atualiza os campos de nome e telefone no Firestore usando o documentId
+    CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencies');
+    await emergencies.doc(documentId).update({
+      'name': name,
+      'phoneNumber': phoneNumber,
+      'status': 'new',
     });
-    return uniqueId; // Retorna o UID único
   }
 
-  Future<void> uploadFile(File file, String documentId) async {
+  Future<void> uploadFile(String uid, File file) async {
     try {
       var uuid = Uuid();
       // Substitui o nome do arquivo conforme necessário
       await FirebaseStorage.instance
-          .ref('uploads/${uuid.v1()}.png')
-          .putFile(file)
-          .then((taskSnapshot) async {
-        String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-        await FirebaseFirestore.instance
-            .collection('emergencias')
-            .doc(documentId)
-            .update({'fileUrl': downloadUrl});
-      });
+          .ref('uploads/$uid/${uuid.v1()}.png')
+          .putFile(file);
     } on FirebaseException catch (e) {
       // e.g, e.code == 'canceled'
       print(e);
@@ -58,19 +58,36 @@ class _SecondScreenState extends State<SecondScreen> {
     final phoneNumber = _phoneNumberController.text;
 
     if (fullName.length >= 7 && phoneNumber.length >= 11) {
-      String documentId = await saveData(fullName, phoneNumber);
-      if (documentId != null) {
-        await uploadFile(widget.image, documentId);
+      String? uid = await FirebaseMessaging.instance.getToken();
+      if (uid != null && uid.isNotEmpty) {
+        await updateData(fullName, phoneNumber);
+        await uploadFile(uid, widget.image); // Chama a função uploadFile aqui
         setState(() {
           _nameErrorMessage = '';
           _phoneNumberErrorMessage = '';
         });
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => ThirdScreen()),
         );
       } else {
-        print('Erro ao salvar os dados');
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Erro'),
+              content: Text('Falha ao obter o UID do usuário.'),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
       }
     } else {
       setState(() {
@@ -90,72 +107,96 @@ class _SecondScreenState extends State<SecondScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Second Screen'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xFF389BA6)),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: 'Digite seu nome completo',
-                    labelText: 'Digite seu nome completo',
-                    labelStyle: TextStyle(
-                      fontSize: 18.0,
-                      color: Color(0xFF389BA6),
-                    ),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              if (_nameErrorMessage.isNotEmpty)
-                Text(
-                  _nameErrorMessage,
-                  style: TextStyle(color: Colors.red),
-                ),
-              SizedBox(height: 8.0),
-              Container(
-                padding: EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xFF389BA6)),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                child: TextField(
-                  controller: _phoneNumberController,
-                  decoration: InputDecoration(
-                    hintText: 'Digite seu número de telefone',
-                    labelText: 'Digite seu número de telefone',
-                    labelStyle: TextStyle(
-                      fontSize: 18.0,
-                      color: Color(0xFF389BA6),
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-              ),
-              if (_phoneNumberErrorMessage.isNotEmpty)
-                Text(
-                  _phoneNumberErrorMessage,
-                  style: TextStyle(color: Colors.red),
-                ),
-              SizedBox(height: 8.0),
-              ElevatedButton(
-                onPressed: _validateInputs,
-                child: Text('Chamar Emegência'),
-              ),
+      body: Container(
+        padding: EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF389BA6),
+              Color(0xFF6CCECB),
             ],
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/itooth.png', // Caminho para a imagem da logo
+              width: 150.0,
+              height: 150.0,
+            ),
+            SizedBox(height: 32.0),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  hintText: 'Digite seu nome completo',
+                  labelText: 'Digite seu nome completo',
+                  labelStyle: TextStyle(
+                    fontSize: 18.0,
+                    color: Color(0xFF389BA6),
+                  ),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            if (_nameErrorMessage.isNotEmpty)
+              Text(
+                _nameErrorMessage,
+                style: TextStyle(color: Colors.red),
+              ),
+            SizedBox(height: 8.0),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: TextField(
+                controller: _phoneNumberController,
+                decoration: InputDecoration(
+                  hintText: 'Digite seu número de telefone',
+                  labelText: 'Digite seu número de telefone',
+                  labelStyle: TextStyle(
+                    fontSize: 18.0,
+                    color: Color(0xFF389BA6),
+                  ),
+                  border: InputBorder.none,
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ),
+            if (_phoneNumberErrorMessage.isNotEmpty)
+              Text(
+                _phoneNumberErrorMessage,
+                style: TextStyle(color: Colors.red),
+              ),
+            SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: _validateInputs,
+              child: Text(
+                'Chamar Emergência',
+                style: TextStyle(fontSize: 18.0),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF389BA6),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 12.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

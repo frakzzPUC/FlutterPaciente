@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
 import 'second_screen.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,16 +13,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   ImagePicker imagePicker = ImagePicker();
   File? imagemSelecionada;
-
-  void _onAddPhotoButtonPressed() async {
-    final XFile? imagemTemporaria =
-    await imagePicker.pickImage(source: ImageSource.gallery);
-    if (imagemTemporaria != null) {
-      setState(() {
-        imagemSelecionada = File(imagemTemporaria.path);
-      });
-    }
-  }
 
   void _onTakePhotoButtonPressed() async {
     final XFile? imagemTemporaria =
@@ -39,7 +28,9 @@ class _HomePageState extends State<HomePage> {
     if (imagemSelecionada != null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => SecondScreen(image: imagemSelecionada!)),
+        MaterialPageRoute(
+          builder: (context) => SecondScreen(image: imagemSelecionada!),
+        ),
       );
     }
   }
@@ -47,31 +38,53 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Itooth'),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Stack(
         children: [
-          imagemSelecionada == null
-              ? Container()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Image.file(imagemSelecionada!),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF389BA6),
+                  Color(0xFF6CCECB),
+                ],
+              ),
+            ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: _onAddPhotoButtonPressed,
-                icon: Icon(Icons.add_photo_alternate_outlined),
-              ),
-              IconButton(
-                onPressed: _onTakePhotoButtonPressed,
-                icon: Icon(Icons.photo_camera_outlined),
-              ),
-            ],
+          Positioned(
+            top: 16.0,
+            left: 0.0,
+            right: 0.0,
+            child: Image.asset(
+              'assets/images/itooth.png',
+              width: 130.0,
+              height: 130.0,
+              alignment: Alignment.center,
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                imagemSelecionada == null
+                    ? Container()
+                    : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Image.file(imagemSelecionada!),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _onTakePhotoButtonPressed,
+                      icon: Icon(Icons.photo_camera_outlined),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'home_page.dart';
+import 'emergency.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,19 +9,16 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
+  const MyApp({Key? key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Imagens',
+      title: 'Itooth',
       theme: ThemeData(
-
         primarySwatch: Colors.blue,
       ),
-      home: HomePage(),
+      home: EmergencyPage(), // Use EmergencyPage as the initial page
     );
   }
 }
-

@@ -45,22 +45,40 @@ class _ThirdScreenState extends State<ThirdScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Third Screen'),
-      ),
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _opacityAnimation,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _opacityAnimation.value,
-              child: Text(
-                'Aguarde...',
-                style: TextStyle(fontSize: 24.0),
-              ),
-            );
-          },
-        ),
+      body: Stack(
+        children: [
+          Positioned(
+            top: 16.0,
+            left: 0.0,
+            right: 0.0,
+            child: Image.asset(
+              'assets/images/itooth.png', // Caminho para a imagem da logo do seu app
+              width: 130.0,
+              height: 130.0,
+              alignment: Alignment.center,
+            ),
+          ),
+          Container(
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation: _opacityAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _opacityAnimation.value,
+                      child: Text(
+                        'Aguarde...',
+                        style: TextStyle(fontSize: 24.0),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
