@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'second_screen.dart';
+import 'cadastro_page.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+class CameraPage extends StatefulWidget {
+  const CameraPage({Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _CameraPageState createState() => _CameraPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _CameraPageState extends State<CameraPage> {
   ImagePicker imagePicker = ImagePicker();
   File? imagemSelecionada;
 
@@ -24,12 +24,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _navigateToSecondScreen() {
+  void _navigateToCadastroScreen() {
     if (imagemSelecionada != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SecondScreen(image: imagemSelecionada!),
+          builder: (context) => CadastroPage(image: imagemSelecionada!),
         ),
       );
     }
@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToSecondScreen,
+        onPressed: _navigateToCadastroScreen,
         child: Icon(Icons.arrow_forward),
         backgroundColor: imagemSelecionada != null ? Colors.green : Colors.grey,
       ),

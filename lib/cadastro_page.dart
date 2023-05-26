@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_itooth/third_screen.dart';
+import 'package:flutter_itooth/dentista_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
@@ -7,17 +7,17 @@ import 'package:uuid/uuid.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class SecondScreen extends StatefulWidget {
+class CadastroPage extends StatefulWidget {
   final File image; // Adicione um campo para a imagem
 
   // Modifique o construtor para aceitar a imagem como argumento
-  SecondScreen({required this.image});
+  CadastroPage({required this.image});
 
   @override
-  _SecondScreenState createState() => _SecondScreenState();
+  _CadastroPageState createState() => _CadastroPageState();
 }
 
-class _SecondScreenState extends State<SecondScreen> {
+class _CadastroPageState extends State<CadastroPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
   String _nameErrorMessage = '';
@@ -37,6 +37,7 @@ class _SecondScreenState extends State<SecondScreen> {
       'name': name,
       'phoneNumber': phoneNumber,
       'status': 'new',
+      'time': FieldValue.serverTimestamp(),
     });
   }
 
@@ -68,7 +69,7 @@ class _SecondScreenState extends State<SecondScreen> {
         });
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => ThirdScreen()),
+          MaterialPageRoute(builder: (context) => DentistaView()),
         );
       } else {
         showDialog(

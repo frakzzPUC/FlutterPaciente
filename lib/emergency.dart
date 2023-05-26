@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_itooth/home_page.dart';
+import 'package:flutter_itooth/camera_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -33,7 +33,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
       // Navegar para HomePage após a operação bem-sucedida
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => CameraPage()),
       );
     } else {
       showDialog(
