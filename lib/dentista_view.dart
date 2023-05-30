@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert'; // Importante para o jsonDecode.
 
 class DentistaView extends StatefulWidget {
   @override
@@ -20,14 +21,30 @@ class _DentistaViewState extends State<DentistaView> {
 
   // Função para buscar os dados do Firebase.
   _getFirebaseData() async {
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    // Vamos chamar a função getEmergencyAcceptedUsers ao invés de buscar diretamente do Firestore.
+    HttpsCallable callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1').httpsCallable('getEmergencyAcceptedUsers');
+    try {
+      final results = await callable();
+      print('Dados recebidos do Firebase: ${results.data}');
+      // Parse the JSON string into a dynamic object.
+      dynamic response = jsonDecode(results.data);
 
-    QuerySnapshot querySnapshot = await firestore.collection('user').get();
+      // Check the 'status' field to make sure the request was successful.
+      if (response['status'] == 'SUCCESS') {
+        // Decode the 'payload' field, which is already a list.
+        List<dynamic> users = response['payload'];
 
-    // Use setState para dizer ao Flutter para reconstruir a interface do usuário com os novos dados.
-    setState(() {
-      _firebaseData = querySnapshot.docs.map((doc) => doc.data()).toList();
-    });
+        // Use setState to tell Flutter to rebuild the UI with the new data.
+        setState(() {
+          _firebaseData = users;
+        });
+      } else {
+        // Handle the error.
+        print('Error getting data: ${response['message']}');
+      }
+    } catch (e) {
+      print('Error getting data from Firebase: $e');
+    }
   }
 
   @override
@@ -63,11 +80,11 @@ class _DentistaViewState extends State<DentistaView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Nome: ${_firebaseData[index]['name']}', // Aqui estão os nomes dos usuários.
+                                'Nome: ${_firebaseData[index]['name'] ?? 'Nome desconhecido'}', // Aqui estão os nomes dos usuários.
                                 style: TextStyle(fontSize: 24.0),
                               ),
                               Text(
-                                'Phone: ${_firebaseData[index]['phone']}', // Aqui estão os telefones dos usuários.
+                                'Telefone: ${_firebaseData[index]['phone'] ?? 'Telefone desconhecido'}', // Aqui estão os telefones dos usuários.
                                 style: TextStyle(fontSize: 24.0),
                               ),
                             ],
