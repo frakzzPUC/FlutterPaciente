@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_itooth/camera_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_itooth/camera_page.dart';
 
 class EmergencyPage extends StatefulWidget {
   @override
@@ -9,6 +9,7 @@ class EmergencyPage extends StatefulWidget {
 }
 
 class _EmergencyPageState extends State<EmergencyPage> {
+
   Future<void> saveData(String fcmToken) async {
     String uid = await FirebaseMessaging.instance.getToken() ?? '';
 
@@ -83,17 +84,49 @@ class _EmergencyPageState extends State<EmergencyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Emergency Page'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () async {
-            String? fcmToken = await FirebaseMessaging.instance.getToken();
-            _validateInputs(fcmToken ?? '');
-          },
-          child: Text('EMERGÊNCIA'),
-        ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF389BA6),
+                  Color(0xFF6CCECB),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16.0,
+            left: 0.0,
+            right: 0.0,
+            child: Image.asset(
+              'assets/images/itooth.png',
+              width: 130.0,
+              height: 130.0,
+              alignment: Alignment.center,
+            ),
+          ),
+          Center(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white, backgroundColor: Color(0xFF389BA6),  // Cor do texto
+                textStyle: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+              ),
+              onPressed: () async {
+                String? fcmToken = await FirebaseMessaging.instance.getToken();
+                _validateInputs(fcmToken ?? '');
+              },
+              child: Text('EMERGÊNCIA'),
+            ),
+          ),
+        ],
       ),
     );
   }

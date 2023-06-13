@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'dart:convert'; // Importante para o jsonDecode.
-import 'package:flutter_itooth/loc_view.dart'; // Importe sua tela loc_view.dart
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_itooth/loc_view.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DentistaView extends StatefulWidget {
   @override
@@ -32,6 +34,20 @@ class _DentistaViewState extends State<DentistaView> {
       }
     } catch (e) {
       print('Error getting data from Firebase: $e');
+    }
+  }
+
+  Future<LatLng> _getLatLngFromAddress(String address) async {
+    String url = "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=AIzaSyBHlil8AXJQ4viK9A1y8pam7LUVfYorroM";
+    http.Response response = await http.get(Uri.parse(url));
+    Map<String, dynamic> responseJson = jsonDecode(response.body);
+
+    if (responseJson['status'] == 'OK') {
+      double lat = responseJson['results'][0]['geometry']['location']['lat'];
+      double lng = responseJson['results'][0]['geometry']['location']['lng'];
+      return LatLng(lat, lng);
+    } else {
+      throw Exception('Failed to get LatLng from address');
     }
   }
 
@@ -75,9 +91,18 @@ class _DentistaViewState extends State<DentistaView> {
                       ),
                     );
                     if (confirm == true) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => LocView()),
-                      );
+                      try {
+                        LatLng dentistLocation = await _getLatLngFromAddress(_firebaseData[index]['addressone']);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => LocView(
+                              center: dentistLocation,
+                            ),
+                          ),
+                        );
+                      } catch (e) {
+                        print('Error getting LatLng from address: $e');
+                      }
                     }
                   },
                   child: Card(
@@ -102,6 +127,10 @@ class _DentistaViewState extends State<DentistaView> {
                                 Text(
                                   'Telefone: ${_firebaseData[index]['phone'] ?? 'Telefone desconhecido'}',
                                   style: TextStyle(fontSize: 24.0),
+                                ),
+                                Text(
+                                  'Endereço: ${_firebaseData[index]['addressone'] ?? 'Endereço desconhecido'}',
+                                  style: TextStyle(fontSize: 20.0),
                                 ),
                               ],
                             ),

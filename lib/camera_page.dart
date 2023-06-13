@@ -80,6 +80,7 @@ class _CameraPageState extends State<CameraPage> {
                     IconButton(
                       onPressed: _onTakePhotoButtonPressed,
                       icon: Icon(Icons.photo_camera_outlined),
+                      iconSize: 40.0,
                     ),
                   ],
                 ),
