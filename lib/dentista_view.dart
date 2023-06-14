@@ -1,9 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_itooth/loc_view.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_itooth/detail_dentist.dart';
 
 class DentistaView extends StatefulWidget {
   @override
@@ -12,43 +10,46 @@ class DentistaView extends StatefulWidget {
 
 class _DentistaViewState extends State<DentistaView> {
   List<dynamic> _firebaseData = [];
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _getFirebaseData();
+    _timer = Timer.periodic(Duration(seconds: 15), (timer) {
+      _getFirebaseData();
+    });
   }
 
   _getFirebaseData() async {
-    HttpsCallable callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1').httpsCallable('getEmergencyAcceptedUsers');
-    try {
-      final results = await callable();
-      dynamic response = jsonDecode(results.data);
-      if (response['status'] == 'SUCCESS') {
-        List<dynamic> users = response['payload'];
-        setState(() {
-          _firebaseData = users;
-        });
-      } else {
-        print('Error getting data: ${response['message']}');
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    QuerySnapshot emergenciesSnapshot = await firestore.collection('emergencies').get();
+
+    // Limpa os dados antigos antes de receber os novos
+    _firebaseData.clear();
+
+    for (var emergencyDoc in emergenciesSnapshot.docs) {
+      dynamic emergencyData = emergencyDoc.data();
+      String? userAccepted = emergencyData['usersaccepted'];
+
+      if (userAccepted != null) {
+        DocumentSnapshot userDoc = await firestore.collection('user').doc(userAccepted).get();
+
+        if (userDoc.exists) {
+          dynamic userData = userDoc.data();
+          setState(() {
+            _firebaseData.add(userData);
+          });
+        }
       }
-    } catch (e) {
-      print('Error getting data from Firebase: $e');
     }
   }
 
-  Future<LatLng> _getLatLngFromAddress(String address) async {
-    String url = "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=AIzaSyBHlil8AXJQ4viK9A1y8pam7LUVfYorroM";
-    http.Response response = await http.get(Uri.parse(url));
-    Map<String, dynamic> responseJson = jsonDecode(response.body);
-
-    if (responseJson['status'] == 'OK') {
-      double lat = responseJson['results'][0]['geometry']['location']['lat'];
-      double lng = responseJson['results'][0]['geometry']['location']['lng'];
-      return LatLng(lat, lng);
-    } else {
-      throw Exception('Failed to get LatLng from address');
-    }
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -68,42 +69,14 @@ class _DentistaViewState extends State<DentistaView> {
               itemCount: _firebaseData.length,
               itemBuilder: (BuildContext context, int index) {
                 return InkWell(
-                  onTap: () async {
-                    bool confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text('Confirmação'),
-                        content: Text('Deseja obter a localização deste dentista?'),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('NÃO'),
-                            onPressed: () {
-                              Navigator.of(context).pop(false);
-                            },
-                          ),
-                          TextButton(
-                            child: Text('SIM'),
-                            onPressed: () {
-                              Navigator.of(context).pop(true);
-                            },
-                          ),
-                        ],
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => Detail(
+                          userData: _firebaseData[index],
+                        ),
                       ),
                     );
-                    if (confirm == true) {
-                      try {
-                        LatLng dentistLocation = await _getLatLngFromAddress(_firebaseData[index]['addressone']);
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => LocView(
-                              center: dentistLocation,
-                            ),
-                          ),
-                        );
-                      } catch (e) {
-                        print('Error getting LatLng from address: $e');
-                      }
-                    }
                   },
                   child: Card(
                     margin: EdgeInsets.all(10.0),
