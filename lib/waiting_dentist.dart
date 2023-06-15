@@ -38,17 +38,16 @@ class _WaitingDentistState extends State<WaitingDentist> {
         Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
 
         if (data != null && data.containsKey('loc')) {
-          String loc = data['loc'] as String;
-          if (loc.isNotEmpty) {
-            List<String> latLng = loc.split(',');
-            double latitude = double.parse(latLng[0]);
-            double longitude = double.parse(latLng[1]);
+          GeoPoint? geoPoint = data['loc'] as GeoPoint?;
+          if (geoPoint != null) {
+            double latitude = geoPoint.latitude;
+            double longitude = geoPoint.longitude;
             LatLng center = LatLng(latitude, longitude);
 
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LocView(center: center),
+                builder: (context) => LocView(center: center, uidDentista: widget.uidDentista,),
               ),
             );
           }

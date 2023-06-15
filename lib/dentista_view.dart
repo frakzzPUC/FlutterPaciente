@@ -52,6 +52,17 @@ class _DentistaViewState extends State<DentistaView> {
     super.dispose();
   }
 
+  void navigateToDetail(dynamic userData, String uidDentista) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Detail(
+          userData: userData,
+          uidDentista: uidDentista,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,13 +81,7 @@ class _DentistaViewState extends State<DentistaView> {
               itemBuilder: (BuildContext context, int index) {
                 return InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => Detail(
-                          userData: _firebaseData[index], uidDentista: '',
-                        ),
-                      ),
-                    );
+                    navigateToDetail(_firebaseData[index], '');
                   },
                   child: Card(
                     margin: EdgeInsets.all(10.0),
