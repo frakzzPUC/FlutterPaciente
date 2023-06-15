@@ -10,6 +10,7 @@ class RatingDentist extends StatefulWidget {
   @override
   _RatingDentistState createState() => _RatingDentistState();
 }
+
 class _RatingDentistState extends State<RatingDentist> {
   double _rating = 0.0;
   String _comment = '';
@@ -40,13 +41,12 @@ class _RatingDentistState extends State<RatingDentist> {
   }
 
   void _sendRating() async {
-    CollectionReference ratingCollection =
-    FirebaseFirestore.instance.collection('ratings');
+    CollectionReference ratingCollection = FirebaseFirestore.instance.collection('ratings');
 
-    await ratingCollection.add({
+    await ratingCollection.doc(widget.uidDentista).set({
       'rate': _rating,
       'comment': _comment,
-      'timestamp': DateTime.now().toUtc().toString(),
+      'time': DateTime.now().toUtc().toString(),
       'name': _userName,
     });
 
@@ -164,11 +164,11 @@ class _RatingDentistState extends State<RatingDentist> {
                 onPressed: _sendRating,
                 child: Text('Enviar Avaliação'),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white, backgroundColor: Color(0xFF389BA6),
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF389BA6),
                   padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
                   textStyle: TextStyle(
                     fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),

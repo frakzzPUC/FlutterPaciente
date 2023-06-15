@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CadastroPage extends StatefulWidget {
@@ -23,22 +22,21 @@ class _CadastroPageState extends State<CadastroPage> {
   String _nameErrorMessage = '';
   String _phoneNumberErrorMessage = '';
 
-  Future<void> updateData(String name, String phoneNumber) async {
-    final String uid = await FirebaseMessaging.instance.getToken() ?? '';
+  Future<void> updateData(String uid, String name, String phoneNumber) async {
+    CollectionReference users = FirebaseFirestore.instance.collection('emergencies'); // Coleção para usuários
+    QuerySnapshot querySnapshot = await users.where('uid', isEqualTo: uid).get();
 
-    CollectionReference users = FirebaseFirestore.instance.collection('documentID'); // Define a referência
-    DocumentSnapshot docSnapshot = await users.doc(uid).get();
-    Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?; //
-    String? documentId = data?['documentId'];
+    if (querySnapshot.docs.isNotEmpty) {
+      DocumentSnapshot docSnapshot = querySnapshot.docs.first;
+      String documentId = docSnapshot.id;
 
-    // Atualiza os campos de nome e telefone no Firestore usando o documentId
-    CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencies');
-    await emergencies.doc(documentId).update({
-      'name': name,
-      'phoneNumber': phoneNumber,
-      'status': 'new',
-      'time': FieldValue.serverTimestamp(),
-    });
+      await users.doc(documentId).update({
+        'name': name,
+        'phoneNumber': phoneNumber,
+        'time':DateTime.timestamp(),
+        'status':'new'
+      });
+    }
   }
 
   Future<void> uploadFile(String uid, File file) async {
@@ -59,10 +57,12 @@ class _CadastroPageState extends State<CadastroPage> {
     final phoneNumber = _phoneNumberController.text;
 
     if (fullName.length >= 7 && phoneNumber.length >= 11) {
-      String? uid = await FirebaseMessaging.instance.getToken();
-      if (uid != null && uid.isNotEmpty) {
-        await updateData(fullName, phoneNumber);
-        await uploadFile(uid, widget.image); // Chama a função uploadFile aqui
+      UserCredential userCredential = await FirebaseAuth.instance.signInAnonymously();
+      User? user = userCredential.user;
+
+      if (user != null && user.uid.isNotEmpty) {
+        await updateData(user.uid, fullName, phoneNumber);
+        await uploadFile(user.uid, widget.image);
         setState(() {
           _nameErrorMessage = '';
           _phoneNumberErrorMessage = '';
@@ -77,7 +77,7 @@ class _CadastroPageState extends State<CadastroPage> {
           builder: (context) {
             return AlertDialog(
               title: Text('Erro'),
-              content: Text('Falha ao obter o UID do usuário.'),
+              content: Text('Falha ao obter a chave anônima do usuário.'),
               actions: [
                 ElevatedButton(
                   onPressed: () {

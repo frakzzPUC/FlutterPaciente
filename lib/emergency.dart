@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_itooth/camera_page.dart';
 
 class EmergencyPage extends StatefulWidget {
@@ -9,29 +9,23 @@ class EmergencyPage extends StatefulWidget {
 }
 
 class _EmergencyPageState extends State<EmergencyPage> {
-
-  Future<void> saveData(String fcmToken) async {
-    String uid = await FirebaseMessaging.instance.getToken() ?? '';
+  Future<void> saveData() async {
+    UserCredential userCredential = await FirebaseAuth.instance.signInAnonymously();
+    User? user = userCredential.user;
+    String uid = user?.uid ?? '';
 
     if (uid.isNotEmpty) {
       CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencies');
-      DocumentReference docRef = await emergencies.add({
+      DocumentReference docRef = emergencies.doc(uid); // Utilize o UID como ID do documento
+
+      await docRef.set({
         'uid': uid,
-        'fcmToken': fcmToken,
         'status': 'draft',
         'name': '',
-        'phoneNumber':'',
+        'phoneNumber': '',
       });
 
-      String documentId = docRef.id;  // Aqui é onde você salva o ID do documento
-
-      // Salvando o documentId no Firestore
-      CollectionReference users = FirebaseFirestore.instance.collection('documentID');
-      await users.doc(uid).set({
-        'documentId': documentId,
-      });
-
-      // Navegar para HomePage após a operação bem-sucedida
+      // Navegar para a página da câmera após a operação bem-sucedida
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => CameraPage()),
@@ -57,28 +51,8 @@ class _EmergencyPageState extends State<EmergencyPage> {
     }
   }
 
-  void _validateInputs(String fcmToken) async {
-    if (fcmToken.isNotEmpty) {
-      await saveData(fcmToken);
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Erro'),
-            content: Text('Por favor, forneça um FCM Token válido.'),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+  void _validateInputs() async {
+    await saveData();
   }
 
   @override
@@ -123,10 +97,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
               ),
-              onPressed: () async {
-                String? fcmToken = await FirebaseMessaging.instance.getToken();
-                _validateInputs(fcmToken ?? '');
-              },
+              onPressed: _validateInputs,
               child: Text('EMERGÊNCIA'),
             ),
           ),

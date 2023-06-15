@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_itooth/rating_dentist.dart';
 
 class LocView extends StatefulWidget {
@@ -15,33 +15,37 @@ class LocView extends StatefulWidget {
 }
 
 class _LocViewState extends State<LocView> {
-
   Future<void> updateStatus(String status) async {
-    final String uid = await FirebaseMessaging.instance.getToken() ?? '';
+    User? user = FirebaseAuth.instance.currentUser;
+    String? uid = user?.uid;
 
-    CollectionReference users = FirebaseFirestore.instance.collection('documentID');
-    DocumentSnapshot docSnapshot = await users.doc(uid).get();
-    Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?; //
-    String? documentId = data?['documentId'];
+    if (uid != null && uid.isNotEmpty) {
+      CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencies');
+      QuerySnapshot querySnapshot = await emergencies.where('uid', isEqualTo: uid).get();
 
-    CollectionReference emergencies = FirebaseFirestore.instance.collection('emergencies');
-    await emergencies.doc(documentId).update({'status': 'done'});
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot docSnapshot = querySnapshot.docs.first;
+        String documentId = docSnapshot.id;
+
+        await emergencies.doc(documentId).update({'status': status});
+      }
+    }
   }
 
-
   void _finalizeSession() async {
-    // Atualizar status para "done"
     await updateStatus('done');
 
-    // Excluir documento de "acceptances"
     CollectionReference acceptances = FirebaseFirestore.instance.collection('acceptances');
-    acceptances.doc(widget.uidDentista).delete();
+    QuerySnapshot querySnapshot = await acceptances.get();
 
-    // Navegar para a tela de avaliação (RatingDentist)
+    for (DocumentSnapshot document in querySnapshot.docs) {
+      await document.reference.delete();
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RatingDentist(uidDentista: widget.uidDentista,),
+        builder: (context) => RatingDentist(uidDentista: widget.uidDentista),
       ),
     );
   }
@@ -71,12 +75,12 @@ class _LocViewState extends State<LocView> {
             child: ElevatedButton(
               onPressed: _finalizeSession,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, // Define a cor vermelha
+                backgroundColor: Colors.red,
               ),
               child: Text(
                 'Finalizar Atendimento',
                 style: TextStyle(
-                  color: Colors.white, // Define a cor do texto como branco
+                  color: Colors.white,
                 ),
               ),
             ),
