@@ -112,7 +112,11 @@ class _EmergencyPageState extends State<EmergencyPage> {
           Center(
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white, backgroundColor: Color(0xFF389BA6),  // Cor do texto
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF389BA6),
                 textStyle: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

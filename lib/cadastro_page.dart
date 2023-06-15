@@ -134,7 +134,7 @@ class _CadastroPageState extends State<CadastroPage> {
               padding: EdgeInsets.all(8.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(30.0),
               ),
               child: TextField(
                 controller: _nameController,
@@ -160,7 +160,7 @@ class _CadastroPageState extends State<CadastroPage> {
               padding: EdgeInsets.all(8.0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(30.0),
               ),
               child: TextField(
                 controller: _phoneNumberController,
@@ -193,7 +193,7 @@ class _CadastroPageState extends State<CadastroPage> {
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 12.0),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(30.0),
                 ),
               ),
             ),

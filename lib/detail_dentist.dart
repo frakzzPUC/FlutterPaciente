@@ -1,10 +1,85 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_itooth/loc_view.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_itooth/waiting_dentist.dart';
+
 class Detail extends StatelessWidget {
   final dynamic userData;
+  final String uidDentista;
 
-  Detail({required this.userData});
+  Detail({required this.userData, required this.uidDentista});
+
+  Future<void> acceptDentist(BuildContext context) async {
+    try {
+      String uidDentista = '';
+      String myUid = '';
+
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('emergencies').get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot document = querySnapshot.docs.first;
+        Map<String, dynamic>? data = document.data() as Map<String, dynamic>?;
+
+        if (data != null) {
+          uidDentista = data['usersaccepted'];
+          myUid = data['uid'];
+        }
+      }
+
+      if (uidDentista.isNotEmpty && myUid.isNotEmpty) {
+        Map<String, dynamic> acceptanceData = {
+          'uid_dentista': uidDentista,
+          'uid_usuario': myUid,
+          'loc': '',
+        };
+
+        CollectionReference acceptances = FirebaseFirestore.instance.collection('acceptances');
+        await acceptances.doc(uidDentista).set(acceptanceData);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WaitingDentist(uidDentista: uidDentista),
+          ),
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Erro'),
+              content: Text('Falha ao obter os dados do dentista.'),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (error) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Erro'),
+            content: Text('Ocorreu um erro ao processar sua solicitação.'),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,13 +149,7 @@ class Detail extends StatelessWidget {
                 height: 50.0,
                 child: ElevatedButton(
                   onPressed: () {
-                    LatLng center = LatLng(0.0, 0.0); // Substitua pelas coordenadas LatLng desejadas
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LocView(center: center),
-                      ),
-                    );
+                    acceptDentist(context);
                   },
                   style: ButtonStyle(
                     backgroundColor: MaterialStateProperty.all<Color>(Color(0xFF389BA6)),

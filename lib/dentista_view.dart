@@ -73,7 +73,7 @@ class _DentistaViewState extends State<DentistaView> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => Detail(
-                          userData: _firebaseData[index],
+                          userData: _firebaseData[index], uidDentista: '',
                         ),
                       ),
                     );
