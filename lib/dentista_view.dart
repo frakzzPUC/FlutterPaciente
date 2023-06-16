@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_itooth/detail_dentist.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class DentistaView extends StatefulWidget {
   @override
@@ -38,6 +39,7 @@ class _DentistaViewState extends State<DentistaView> {
 
         if (userDoc.exists) {
           dynamic userData = userDoc.data();
+          userData['uid'] = userAccepted; // Adiciona o UID à userData
           setState(() {
             _firebaseData.add(userData);
           });
@@ -52,15 +54,20 @@ class _DentistaViewState extends State<DentistaView> {
     super.dispose();
   }
 
-  void navigateToDetail(dynamic userData, String uidDentista) {
+  void navigateToDetail(dynamic userData) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => Detail(
           userData: userData,
-          uidDentista: uidDentista,
+          uidDentista: userData['uid'],
         ),
       ),
     );
+  }
+
+  Future<String> getDentistPhotoUrl(String uidDentista) async {
+    final ref = FirebaseStorage.instance.ref().child('dentista/$uidDentista');
+    return await ref.getDownloadURL();
   }
 
   @override
@@ -81,7 +88,7 @@ class _DentistaViewState extends State<DentistaView> {
               itemBuilder: (BuildContext context, int index) {
                 return InkWell(
                   onTap: () {
-                    navigateToDetail(_firebaseData[index], '');
+                    navigateToDetail(_firebaseData[index]);
                   },
                   child: Card(
                     margin: EdgeInsets.all(10.0),
@@ -89,9 +96,20 @@ class _DentistaViewState extends State<DentistaView> {
                       padding: EdgeInsets.all(10.0),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            backgroundImage: AssetImage('assets/images/default_user.png'),
-                            radius: 30.0,
+                          FutureBuilder<String>(
+                            future: getDentistPhotoUrl(_firebaseData[index]['uid']),
+                            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return CircularProgressIndicator(); // or some other placeholder
+                              } else if (snapshot.hasError) {
+                                return Text('Error: ${snapshot.error}');
+                              } else {
+                                return CircleAvatar(
+                                  backgroundImage: NetworkImage(snapshot.data ?? ''),
+                                  radius: 30.0,
+                                );
+                              }
+                            },
                           ),
                           SizedBox(width: 10.0),
                           Flexible(

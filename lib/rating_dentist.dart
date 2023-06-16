@@ -43,10 +43,11 @@ class _RatingDentistState extends State<RatingDentist> {
   void _sendRating() async {
     CollectionReference ratingCollection = FirebaseFirestore.instance.collection('ratings');
 
-    await ratingCollection.doc(widget.uidDentista).set({
+    await ratingCollection.add({
+      'uid_dentista': widget.uidDentista,
       'rate': _rating,
       'comment': _comment,
-      'time': DateTime.now().toUtc().toString(),
+      'time':DateTime.timestamp(),
       'name': _userName,
     });
 
@@ -68,6 +69,7 @@ class _RatingDentistState extends State<RatingDentist> {
       },
     );
   }
+
 
   Widget _buildRatingStars() {
     return Row(

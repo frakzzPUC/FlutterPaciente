@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_itooth/waiting_dentist.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class Detail extends StatelessWidget {
   final dynamic userData;
@@ -80,6 +81,10 @@ class Detail extends StatelessWidget {
       );
     }
   }
+  Future<String> getDentistPhotoUrl() async {
+    final ref = FirebaseStorage.instance.ref().child('dentista/$uidDentista');
+    return await ref.getDownloadURL();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,9 +102,20 @@ class Detail extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircleAvatar(
-                backgroundImage: AssetImage('assets/images/default_user.png'),
-                radius: 80.0,
+              FutureBuilder<String>(
+                future: getDentistPhotoUrl(),
+                builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator(); // or some other placeholder
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    return CircleAvatar(
+                      backgroundImage: NetworkImage(snapshot.data ?? ''),
+                      radius: 80.0,
+                    );
+                  }
+                },
               ),
               SizedBox(height: 20.0),
               Text(
